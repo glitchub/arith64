@@ -1,0 +1,32 @@
+64-bit arithmetic functions for use with 32-bit GCC.
+
+Some versions of 32-bit GCC may emit calls to external helper functions to
+perform 64-bit operations.  Normally these functions are resolved by libgcc.a
+which is statically linked to the program.
+
+But libgcc may not be usable in some applications, e.g. embedded systems and
+linux kernel drivers. In those cases you'll get an linker error such as:
+
+    undefined reference to `__divdi3'
+
+The solution is to link arith64.c to your code, or just copy the required
+functions.
+
+Also see https://gcc.gnu.org/onlinedocs/gccint/Integer-library-routines.html.
+
+Note not all 64-bit operations have been implemented, just the ones I've
+required to date.
+
+====
+
+Monte-Carlo validation testing can be performed by just running 'make'.
+
+This builds test executables and launches a python script to verify that libgcc
+and arith64 produce the same results for random 64-bit inputs.
+
+If all is well, the script runs forever, intermittently printing a "." to show
+that things are happening. Use ^C to kill it. You can also 'make clean' to
+purge the generated test programs.
+
+Note your system may require 32-bit compatibility libraries in order for the
+build to succeed. On debian, try "apt install gcc=-multilib".

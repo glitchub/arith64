@@ -1,4 +1,4 @@
-// GCC 64-bit integer arithmetic support for systems that:wq can't link libgcc.
+// GCC 64-bit integer arithmetic support for systems that can't link libgcc.
 // This software is released as-is into the public domain, as described at
 // https://unlicense.org. Do whatever you like with it.
 

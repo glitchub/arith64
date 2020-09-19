@@ -15,6 +15,7 @@ u64 __udivdi3(u64 a, u64 b);
 u64 __umoddi3(u64 a, u64 b);
 s64 __divdi3(s64 a, s64 b);
 s64 __moddi3(s64 a, s64 b);
+int __popcountdi2(u64);
 
 int main(int argc, char *argv[])
 {
@@ -23,7 +24,7 @@ int main(int argc, char *argv[])
     u64 a = strtoull(argv[1],NULL,0);
     u64 b = strtoull(argv[2],NULL,0);
 
-    printf("%llu %llu: abs=%lld clz=%d ctz=%d ffs=%d udiv=%llu umod=%llu div=%lld mod=%lld\n",
+    printf("%llu %llu: abs=%lld clz=%d ctz=%d ffs=%d udiv=%llu umod=%llu div=%lld mod=%lld pop=%d\n",
         a, b,
         __absvdi2((s64)a),
         __clzdi2(a),
@@ -32,6 +33,7 @@ int main(int argc, char *argv[])
         __udivdi3(a, b),
         __umoddi3(a, b),
         __divdi3((s64)a, (s64)b),
-        __moddi3((s64)a, (s64)b));
+        __moddi3((s64)a, (s64)b),
+        __popcountdi2(a));
     return 0;
 }

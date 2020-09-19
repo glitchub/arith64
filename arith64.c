@@ -5,9 +5,13 @@
 // Function prototypes and descriptions are taken from
 // https://gcc.gnu.org/onlinedocs/gccint/Integer-library-routines.html.
 
+// Note these functions must be resolvable by the linker and therefore cannot
+// be inline or static, even if they're defined in the file where they'll be
+// used.
+
 // Make sure we're using 64-bit numbers, "long" by itself is ambiguous.
-#define u64 unsigned long long
-#define s64 signed long long
+#define u64 unsigned long long int
+#define s64 signed long long int
 
 // Return the absolute value of a.
 s64 __absvdi2(s64 a)
@@ -59,18 +63,19 @@ u64 __divmoddi4(u64 a, u64 b, u64 *c)
 {
     u64 r = 0;                              // start with remainder 0
     if (!b) { volatile char x=0; x=1/x; }   // divisor == 0, force divide-by-zero exception
-    if (a == b) { a = 1; goto out; }        // divisor == numerator, return quotient = 1, remainder = 0
-    if (b == 1) goto out;                   // divide by 1, return quotient = numerator, remainder = 0
-    if (a < b) { r = a; a = 0; goto out; }  // divisor < numerator, return quotient = 0, remainder = numerator
-    char n = __clzdi2(a);                   // skip numerator's leading zeros (XXX is this really a worthwhile optimization?)
-    a <<= n;
-    while (n++ < 64)                        // for each remaining bit
+    if (a == b) a = 1;                      // divisor == numerator, return quotient = 1, remainder = 0
+    else if (a < b) r = a, a = 0;           // divisor < numerator, return quotient = 0, remainder = numerator
+    else if (b != 1)                        // divide by 1, return quotient = numerator, remainder = 0
     {
-        r = (r << 1) | ((s64)a < 0);        // shift numerator MSB to remainder LSB
-        a <<= 1;
-        if (r >= b) { r -= b; a |= 1; }     // if remainder is greater than divisor, wrap and update quotient
+        char n = __clzdi2(a);               // skip numerator's leading zeros (XXX is this really a worthwhile optimization?)
+        a <<= n;
+        while (n++ < 64)                    // for each remaining bit
+        {
+            r = (r << 1) | ((s64)a < 0);    // shift numerator MSB to remainder LSB
+            a <<= 1;
+            if (r >= b) r -= b, a |= 1;     // if remainder is greater than divisor, wrap and update quotient
+        }
     }
-    out:
     if (c) *c = r;                          // maybe set remainder
     return a;                               // return the quotient
 }
@@ -102,4 +107,12 @@ s64 __moddi3(s64 a, s64 b)
     u64 r;
     __divmoddi4(__absvdi2(a), __absvdi2(b), &r);
     return (a > 0) ? (s64)r : -(s64)r;      // remainder has same sign as numerator
+}
+
+// Return the number of bits set in a.
+int __popcountdi2(u64 a)
+{
+    int n = 0;
+    while (a) n++, a &= a - 1;
+    return n;
 }

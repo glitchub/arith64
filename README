@@ -24,9 +24,9 @@ Monte-Carlo validation testing can be performed by just running 'make'.
 This builds test executables and launches a python script to verify that libgcc
 and arith64 produce the same results for random 64-bit inputs.
 
-If all is well, the script runs forever, intermittently printing a "." to show
-that things are happening. Use ^C to kill it. You can also 'make clean' to
-purge the generated test programs.
+If all is well, the script runs forever, intermittently printing the total
+number of tests performed (in millions). Use ^C to kill it. You can also 'make
+clean' to purge the generated test programs.
 
 Note your system may require 32-bit compatibility libraries in order for the
 build to succeed. On debian, try "apt install gcc=-multilib".

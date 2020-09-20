@@ -3,20 +3,26 @@
 import random, subprocess
 
 loops = 0
-try:
-    while True:
-        loops += 1
-        a = str(random.randint(0,2**64-1))
-        b = str(random.randint(1,2**64-1)) # never 0
+procs = []
+for what in ["gcc", "arith64"]:
+    procs.append(subprocess.Popen("./test64.%s" % what, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True))
 
-        gcc=subprocess.run(["./test64.gcc",a,b], check=True, capture_output=True)
-        arith64=subprocess.run(["./test64.arith64",a,b], check=True, capture_output=True)
-
-        if gcc.stdout != arith64.stdout: break
-        if not loops % 100: print(".",end='',flush=True)
-except KeyboardInterrupt:
-    pass
-
-print("\nFailed after %d loops" % loops)
-print("gcc:    ",gcc.stdout.decode().strip());
-print("arith64:",arith64.stdout.decode().strip());
+while True:
+    a = random.randint(0,2**64-1)
+    if loops < 100000:
+        b = 1
+    elif loops < 200000:
+        b = a
+    else:
+        b = random.randint(1,2**64-1) # never 0
+    out=[]
+    for p in procs:
+        p.stdin.write("%d %d\n" % (a,b));
+        p.stdin.flush()
+        out.append(p.stdout.readline())
+    if out[0] != out[1]:
+        print("Fail:");
+        print("  gcc    :",out[0].strip())
+        print("  arith64:",out[1].strip())
+    loops += 1
+    if not loops % 10000: print("%.2fM" % (loops/1000000.0,))

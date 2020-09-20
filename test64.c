@@ -19,21 +19,22 @@ int __popcountdi2(u64);
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3) die("Usage: test64 number number\n");
+    u64 a, b;
 
-    u64 a = strtoull(argv[1],NULL,0);
-    u64 b = strtoull(argv[2],NULL,0);
-
-    printf("%llu %llu: abs=%lld clz=%d ctz=%d ffs=%d udiv=%llu umod=%llu div=%lld mod=%lld pop=%d\n",
-        a, b,
-        __absvdi2((s64)a),
-        __clzdi2(a),
-        __ctzdi2(a),
-        __ffsdi2(a),
-        __udivdi3(a, b),
-        __umoddi3(a, b),
-        __divdi3((s64)a, (s64)b),
-        __moddi3((s64)a, (s64)b),
-        __popcountdi2(a));
+    while(fscanf(stdin, "%lld %lld", &a, &b))
+    {
+        fprintf(stdout, "%llu %llu: abs=%lld clz=%d ctz=%d ffs=%d udiv=%llu umod=%llu div=%lld mod=%lld pop=%d\n",
+            a, b,
+            __absvdi2((s64)a),
+            __clzdi2(a),
+            __ctzdi2(a),
+            __ffsdi2(a),
+            __udivdi3(a, b),
+            __umoddi3(a, b),
+            __divdi3((s64)a, (s64)b),
+            __moddi3((s64)a, (s64)b),
+            __popcountdi2(a));
+        fflush(stdout);
+    }
     return 0;
 }

@@ -6,15 +6,23 @@
 
 # Unless there's a mismatch test64.py will run forever.
 
-COPTS=-Wall -Werror -m32
+COPTS=-Wall -Werror -m32 -O3
 
 .PHONY: test
-test: test64.gcc test64.arith64; ./test64.py
+test: both; ./test64.py
 
+# as above but just print average times, does not fail
+.PHONY: bench
+bench: both; ./test64.py -b
+
+# build in the usual way
 test64.gcc: test64.c; gcc ${COPTS} -o $@ $<
 
-# "-nodefaultlibs -lc" prevents link to libgcc
+# build with "-nodefaultlibs -lc" to prevent link to libgcc
 test64.arith64: test64.c arith64.c; gcc ${COPTS} -nodefaultlibs -lc -o $@ $^
+
+.PHONY: both
+both: test64.gcc test64.arith64
 
 .PHONY: clean
 clean:; rm -f test64.gcc test64.arith64 *.o

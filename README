@@ -19,14 +19,18 @@ required to date.
 
 ====
 
-Monte-Carlo validation testing can be performed by just running 'make'.
+'make' performs Monte-Carlo validation testing. Two test executables are
+created, one linked to arith64.c and one to libgcc. test64.py launches these
+into the background and then passes pairs of random 64-bit numbers to each,
+comparing their outputs. On mismatch it reports error and exits, otherwise it
+will run forever, intermittently printing total number of tests performed (in
+millions).
 
-This builds test executables and launches a python script to verify that libgcc
-and arith64 produce the same results for random 64-bit inputs.
+(Note your system may require 32-bit compatiblity libraries in order for the
+build to succeed. On debian, try "apt install gcc-multilib".)
 
-If all is well, the script runs forever, intermittently printing the total
-number of tests performed (in millions). Use ^C to kill it. You can also 'make
-clean' to purge the generated test programs.
+'make bench' is similar, but for each pair of numbers the executables will
+perform each operation one million times and print the average elapsed time in
+nanoseconds. This is informational only, press ^C when bored.
 
-Note your system may require 32-bit compatibility libraries in order for the
-build to succeed. On debian, try "apt install gcc=-multilib".
+'make both' just builds both programs, 'make clean' deletes them.

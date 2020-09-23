@@ -1,8 +1,8 @@
-64-bit arithmetic functions for use with 32-bit GCC.
+32- and 64-bit arithmetic functions for use with 32-bit GCC.
 
 Some versions of 32-bit GCC may emit calls to external helper functions to
-perform 64-bit operations.  Normally these functions are resolved by libgcc.a
-which is statically linked to the program.
+perform certain 32- and 64-bit operations. Normally these functions are
+resolved by libgcc.a which is statically linked to the program.
 
 But libgcc may not be usable in some applications, e.g. embedded systems and
 linux kernel drivers. In those cases you'll get an linker error such as:
@@ -14,14 +14,14 @@ functions.
 
 Also see https://gcc.gnu.org/onlinedocs/gccint/Integer-library-routines.html.
 
-Note not all 64-bit operations have been implemented, just the ones I've
-required to date.
+Note not all operations have been implemented, just the ones I've required to
+date.
 
 ====
 
 'make' performs Monte-Carlo validation testing. Two test executables are
-created, one linked to arith64.c and one to libgcc. test64.py launches these
-into the background and then passes pairs of random 64-bit numbers to each,
+created, one linked to arith64.c and one to libgcc. test.py launches these into
+the background and then passes identical sets of random numbers to each,
 comparing their outputs. On mismatch it reports error and exits, otherwise it
 will run forever, intermittently printing total number of tests performed (in
 millions).

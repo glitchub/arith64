@@ -18,7 +18,7 @@ for what in commands:
 # Generate a random number of specified bit width with bias towards interesting
 # test cases
 def rand64():
-    r = randint(0,2000)
+    r = randint(0,6800)                            # 1% chance of random special case
     if r < 64: return 2**r                         # a single one
     if r == 64: return 2**64-1                     # all ones
     if r == 64+2: return randint(0, 2**32-1)       # low 32 bits

@@ -11,7 +11,7 @@
 
 #ifndef uint64_t
 // mimic stdint.h
-#define arith64_mimic
+#define arith64_stdint
 #define uint64_t unsigned long long int
 #define int64_t signed long long int
 #define uint32_t unsigned int
@@ -43,7 +43,11 @@ typedef union
 // Note the library functions must be resolvable by the linker and therefore
 // can't be inline or static.
 
-#define abs(n) (((n) < 0) ? -(n) : (n))
+// For best performance we try to avoid branching.
+
+// Absolute value, works with int32_t or int64_t
+// Invert and increment if negative
+#define abs(n) (((n) ^ (((n) >= 0) - 1)) + ((n) < 0))
 
 int64_t __absvdi2(int64_t a)
 {
@@ -55,13 +59,12 @@ int64_t __absvdi2(int64_t a)
 // most significant bit position. If a is zero, the result is undefined.
 int __clzsi2(uint32_t a)
 {
-    int n = 0;
-    if (!(a & 0xffff0000)) n += 16, a <<= 16;
-    if (!(a & 0xff000000)) n += 8, a <<= 8;
-    if (!(a & 0xf0000000)) n += 4, a <<= 4;
-    if (!(a & 0xc0000000)) n += 2, a <<= 2;
-    if (!(a & 0x80000000)) n += 1;
-    return n;
+    int b, n = 0;
+    b = !(a & 0xffff0000) << 4; n += b; a <<= b;
+    b = !(a & 0xff000000) << 3; n += b; a <<= b;
+    b = !(a & 0xf0000000) << 2; n += b; a <<= b;
+    b = !(a & 0xc0000000) << 1; n += b; a <<= b;
+    return n + !(a & 0x80000000);
 }
 
 int __clzdi2(uint64_t a)
@@ -73,13 +76,12 @@ int __clzdi2(uint64_t a)
 // least significant bit position. If a is zero, the result is undefined.
 int __ctzsi2(uint32_t a)
 {
-    int n = 0;
-    if (!(a & 0x0000ffff)) n += 16, a >>= 16;
-    if (!(a & 0x000000ff)) n += 8, a >>= 8;
-    if (!(a & 0x0000000f)) n += 4, a >>= 4;
-    if (!(a & 0x00000003)) n += 2, a >>= 2;
-    if (!(a & 0x00000001)) n += 1;
-    return n;
+    int b, n = 0;
+    b = !(a & 0x0000ffff) << 4; n += b; a >>= b;
+    b = !(a & 0x000000ff) << 3; n += b; a >>= b;
+    b = !(a & 0x0000000f) << 2; n += b; a >>= b;
+    b = !(a & 0x00000003) << 1; n += b; a >>= b;
+    return n + !(a & 0x00000001);
 }
 
 int __ctzdi2(uint64_t a)
@@ -92,31 +94,27 @@ int __ctzdi2(uint64_t a)
 // pointed to by c (if it's not NULL).
 uint64_t __divmoddi4(uint64_t a, uint64_t b, uint64_t *c)
 {
-    if (!b) { volatile char x = 0; x=1 / x; }   // divisor == 0, force exception
-    if (b > a)                                  // divisor > numerator
+    if (b > a)                                  // divisor > numerator?
     {
         if (c) *c = a;                          // remainder = numerator
         return 0;                               // quotient = 0
     }
-    if (b == a)                                 // divisor == numerator
+    if (!hi(b))                                 // divisor is 32-bit
     {
-        if (c) *c = 0;                          // remainder = 0
-        return 1;                               // quotient = 1
-    }
-    if (b == 1)                                 // divide by 1
-    {
-        if (c) *c = 0;                          // remainder = 0
-        return a;                               // quotient = numerator
-    }
-    if (b == 2)                                 // divide by 2
-    {
-        if (c) *c = a & 1;                      // remainder = LSB
-        return a >> 1;                          // quotient = numerator >> 1
-    }
-    if (!hi(a) && !hi(b))                       // 32-bit only
-    {
-        if (c) *c = lo(a) % lo(b);              // use generic 32-bit operators
-        return lo(a) / lo(b);
+        if (b == 0)                             // divide by 0
+        {
+            volatile char x = 0; x = 1 / x;     // force an exception
+        }
+        if (b == 1)                             // divide by 1
+        {
+            if (c) *c = 0;                      // remainder = 0
+            return a;                           // quotient = numerator
+        }
+        if (!hi(a))                             // numerator is also 32-bit
+        {
+            if (c) *c = lo(a) % lo(b);          // use generic 32-bit operators
+            return lo(a) / lo(b);
+        }
     }
 
     // let's do long division
@@ -211,14 +209,14 @@ uint64_t __umoddi3(uint64_t a, uint64_t b)
     return r;
 }
 
-// Remove transient macros in case we're #include'd
+// Remove macros in case we're #include'd
 #undef hi
 #undef lo
 #undef abs
-#ifdef arith64_mimic
+#ifdef arith64_stdint
   #undef uint64_t
   #undef int64_t
   #undef uint32_t
   #undef int32_t
-  #undef arith64_mimic
+  #undef arith64_stdint
 #endif

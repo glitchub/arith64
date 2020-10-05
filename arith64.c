@@ -45,13 +45,14 @@ typedef union
 
 // For best performance we try to avoid branching.
 
-// Absolute value, works with int32_t or int64_t
-// Invert and increment if negative
-#define abs(n) (((n) ^ (((n) >= 0) - 1)) + ((n) < 0))
+// Negate a if b is negative, via invert and increment
+#define negate(a, b) (((a) ^ ((((int64_t)(b)) >= 0) - 1)) + (((int64_t)(b)) < 0))
+#define abs(a) negate(a, a)
 
+// Return the absolute value of a.
+// Note LLINT_MIN cannot be negated.
 int64_t __absvdi2(int64_t a)
 {
-    if (a == 1ULL << 63) __builtin_trap(); // can't negate LLINT_MIN!
     return abs(a);
 }
 
@@ -138,8 +139,8 @@ uint64_t __divmoddi4(uint64_t a, uint64_t b, uint64_t *c)
 // Return the quotient of the signed division of a and b.
 int64_t __divdi3(int64_t a, int64_t b)
 {
-    uint64_t q = __divmoddi4(abs(a), abs(b), (void *)0); // *c is NULL
-    return ((a ^ b) < 0) ? -(int64_t)q : (int64_t)q;
+    uint64_t q = __divmoddi4(abs(a), abs(b), (void *)0);
+    return (int64_t) negate(q, a^b); // negate q if a and b signs are different
 }
 
 // Return the index of the least significant 1-bit in a, or the value zero if a
@@ -149,18 +150,18 @@ int __ffsdi2(uint64_t a)
     return a ? __ctzdi2(a) + 1 : 0;
 }
 
-// Return the result of logically shifting a right by b bits
+// Return the result of logically shifting a right by b bits.
 uint64_t __lshrdi3(uint64_t a, int b)
 {
-    if (b <= 0) return a;
-    if (b >= 64) return 0;
-
     _arith64_word w = {.u64 = a};
+
+    b &= 63; // Allowed by C standard
+
     if (b >= 32)
     {
         w.u32.lo = w.u32.hi >> (b - 32);
         w.u32.hi = 0;
-    } else
+    } else if (b)
     {
         w.u32.lo = (w.u32.hi << (32 - b)) | (w.u32.lo >> b);
         w.u32.hi >>= b;
@@ -173,19 +174,18 @@ int64_t __moddi3(int64_t a, int64_t b)
 {
     uint64_t r;
     __divmoddi4(abs(a), abs(b), &r);
-    return (a > 0) ? (int64_t)r : -(int64_t)r; // remainder has same sign as numerator
+    return (int64_t) negate(r, a); // negate remainder if numerator is negative
 }
 
 // Return the number of bits set in a.
 int __popcountsi2(uint32_t a)
 {
-    if (!a) return 0;
     // collect sums into two low bytes
     a = a - ((a >> 1) & 0x55555555);
     a = ((a >> 2) & 0x33333333) + (a & 0x33333333);
     a = (a + (a >> 4)) & 0x0F0F0F0F;
     a = (a + (a >> 16));
-    // add the bytes, delete the cruft, return 1 to 32
+    // add the bytes, return 0 to 63
     return (a + (a >> 8)) & 63;
 }
 
@@ -198,7 +198,7 @@ int __popcountdi2(uint64_t a)
 // Return the quotient of the unsigned division of a and b.
 uint64_t __udivdi3(uint64_t a, uint64_t b)
 {
-    return __divmoddi4(a, b, 0);
+    return __divmoddi4(a, b, (void *)0);
 }
 
 // Return the remainder of the unsigned division of a and b.
@@ -212,6 +212,7 @@ uint64_t __umoddi3(uint64_t a, uint64_t b)
 // Remove macros in case we're #include'd
 #undef hi
 #undef lo
+#undef negate
 #undef abs
 #ifdef arith64_stdint
   #undef uint64_t

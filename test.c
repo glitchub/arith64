@@ -12,6 +12,8 @@
 
 // Functions defined by arith64.c are also in libgcc
 int64_t __absvdi2(int64_t a);
+int64_t __ashldi3(int64_t a, int b);
+int64_t __ashrdi3(int64_t a, int b);
 int __clzdi2(uint64_t a);
 int __clzsi2(uint32_t a);
 int __ctzdi2(uint64_t a);
@@ -25,7 +27,7 @@ int __popcountsi2(uint32_t a);
 uint64_t __udivdi3(uint64_t a, uint64_t b);
 uint64_t __umoddi3(uint64_t a, uint64_t b);
 
-// monotonic nanoseconds
+// monotonic nanoseconds, more or less
 uint64_t nS(void)
 {
     struct timespec t;
@@ -39,7 +41,8 @@ uint64_t nS(void)
 #define dotest(name, fmt, op) \
     if (dobench) { \
         uint64_t t=nS(); for (int x=0; x<LOOPS; x++) op; printf(" " name "=%.2f", (float)(nS()-t)/LOOPS); \
-    } else printf(" " name "=" fmt, op)
+    } else \
+        printf(" " name "=" fmt, op)
 
 int main(int argc, char *argv[])
 {
@@ -47,7 +50,7 @@ int main(int argc, char *argv[])
 
     uint64_t A, B;
 
-    // read pairs of 64-bit numbers from stdin an perform various operations
+    // read pairs of 64-bit numbers from stdin and perform various operations
     while(fscanf(stdin, "%llu %llu", &A, &B) == 2)
     {
         printf("%.16llX %.16llX:", A, B);
@@ -79,6 +82,8 @@ int main(int argc, char *argv[])
         }
 
         dotest("shr",  "%llu", __lshrdi3(A, a & 63));
+        dotest("ashr", "%lld", __ashrdi3((int64_t)A, a & 63));
+        dotest("ashl", "%lld", __ashldi3((int64_t)A, a & 63));
         dotest("ffs",  "%d",   __ffsdi2(A));
         dotest("popd", "%d",   __popcountdi2(A));
         dotest("pops", "%d",   __popcountsi2(a));

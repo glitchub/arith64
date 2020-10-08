@@ -1,13 +1,21 @@
 // GCC 32/64-bit integer arithmetic support for 32-bit systems that can't link
 // to libgcc.
-//
+
+// Function prototypes and descriptions are taken from
+// https://gcc.gnu.org/onlinedocs/gccint/Integer-library-routines.html.
+
+// This file may be #include'd by another file, so we try not to pollute the
+// namespace and we don't import any headers.
+
+// All functions must be resolvable by the linker and therefore can't be inline
+// or static, even if they're #included into the file where they'll be used.
+
+// For best performance we try to avoid branching. This makes the code a little
+// weird in places.
+
 // See https://github.com/glitchub/arith64 for more information.
-//
 // This software is released as-is into the public domain, as described at
 // https://unlicense.org. Do whatever you like with it.
-
-// Note this file may be #include'd by another file, we attempt not to pollute
-// the namespace..
 
 #ifndef uint64_t
 // mimic stdint.h
@@ -21,31 +29,30 @@
 typedef union
 {
     uint64_t u64;
+    int64_t s64;
     struct
     {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        uint32_t hi;
-        uint32_t lo;
+        uint32_t hi; uint32_t lo;
 #else
-        uint32_t lo;
-        uint32_t hi;
+        uint32_t lo; uint32_t hi;
 #endif
     } u32;
+    struct
+    {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+        int32_t hi; int32_t lo;
+#else
+        int32_t lo; int32_t hi;
+#endif
+    } s32;
 } _arith64_word;
 
 // extract hi and lo 32-bit words from 64-bit value
 #define hi(n) (_arith64_word){.u64=n}.u32.hi
 #define lo(n) (_arith64_word){.u64=n}.u32.lo
 
-// __x() function prototypes and descriptions are taken from
-// https://gcc.gnu.org/onlinedocs/gccint/Integer-library-routines.html.
-
-// Note the library functions must be resolvable by the linker and therefore
-// can't be inline or static.
-
-// For best performance we try to avoid branching.
-
-// Negate a if b is negative, via invert and increment
+// Negate a if b is negative, via invert and increment.
 #define negate(a, b) (((a) ^ ((((int64_t)(b)) >= 0) - 1)) + (((int64_t)(b)) < 0))
 #define abs(a) negate(a, a)
 
@@ -54,6 +61,44 @@ typedef union
 int64_t __absvdi2(int64_t a)
 {
     return abs(a);
+}
+
+// Return the result of shifting a left by b bits.
+int64_t __ashldi3(int64_t a, int b)
+{
+    _arith64_word w = {.s64 = a};
+
+    b &= 63;
+
+    if (b >= 32)
+    {
+        w.u32.hi = w.u32.lo << (b - 32);
+        w.u32.lo = 0;
+    } else if (b)
+    {
+        w.u32.hi = (w.u32.lo >> (32 - b)) | (w.u32.hi << b);
+        w.u32.lo <<= b;
+    }
+    return w.s64;
+}
+
+// Return the result of arithmetically shifting a right by b bits.
+int64_t __ashrdi3(int64_t a, int b)
+{
+    _arith64_word w = {.s64 = a};
+
+    b &= 63;
+
+    if (b >= 32)
+    {
+        w.s32.lo = w.s32.hi >> (b - 32);
+        w.s32.hi >>= 31; // 0xFFFFFFFF or 0
+    } else if (b)
+    {
+        w.u32.lo = (w.u32.hi << (32 - b)) | (w.u32.lo >> b);
+        w.s32.hi >>= b;
+    }
+    return w.s64;
 }
 
 // These functions return the number of leading 0-bits in a, starting at the
@@ -129,7 +174,7 @@ uint64_t __divmoddi4(uint64_t a, uint64_t b, uint64_t *c)
     {
         rem = (rem << 1) | (a >> 63);           // shift numerator MSB to remainder LSB
         a = (a << 1) | (wrap & 1);              // shift out the numerator, shift in wrap
-        wrap = ((int64_t)(b - rem - 1) >> 63);  // wrap = (b > rem) ? 0 : 0xffffffffffffffff
+        wrap = ((int64_t)(b - rem - 1) >> 63);  // wrap = (b > rem) ? 0 : 0xffffffffffffffff (via sign extension)
         rem -= b & wrap;                        // if (wrap) rem -= b
     }
     if (c) *c = rem;                            // maybe set remainder
@@ -140,7 +185,7 @@ uint64_t __divmoddi4(uint64_t a, uint64_t b, uint64_t *c)
 int64_t __divdi3(int64_t a, int64_t b)
 {
     uint64_t q = __divmoddi4(abs(a), abs(b), (void *)0);
-    return (int64_t) negate(q, a^b); // negate q if a and b signs are different
+    return negate(q, a^b); // negate q if a and b signs are different
 }
 
 // Return the index of the least significant 1-bit in a, or the value zero if a
@@ -155,7 +200,7 @@ uint64_t __lshrdi3(uint64_t a, int b)
 {
     _arith64_word w = {.u64 = a};
 
-    b &= 63; // Allowed by C standard
+    b &= 63;
 
     if (b >= 32)
     {
@@ -174,7 +219,7 @@ int64_t __moddi3(int64_t a, int64_t b)
 {
     uint64_t r;
     __divmoddi4(abs(a), abs(b), &r);
-    return (int64_t) negate(r, a); // negate remainder if numerator is negative
+    return negate(r, a); // negate remainder if numerator is negative
 }
 
 // Return the number of bits set in a.
@@ -185,7 +230,7 @@ int __popcountsi2(uint32_t a)
     a = ((a >> 2) & 0x33333333) + (a & 0x33333333);
     a = (a + (a >> 4)) & 0x0F0F0F0F;
     a = (a + (a >> 16));
-    // add the bytes, return 0 to 63
+    // add the bytes, return 0 to 32
     return (a + (a >> 8)) & 63;
 }
 

@@ -29,8 +29,28 @@ millions).
 (Note your system may require 32-bit compatiblity libraries in order for the
 build to succeed. On debian, try "apt install gcc-multilib".)
 
-'make bench' is similar, but for each pair of numbers the executables will
-perform each operation one million times and print the average elapsed time in
-nanoseconds. This is informational only, press ^C when bored.
+'make bench' starts the test executables in benchmark mode, they perform each
+operation one million times and print the average elapsed time in nanoseconds.
+test.py then collates the returned information and prints a running average
+every 5 seconds, e.g.:
 
-'make both' just builds both programs, 'make clean' deletes them.
+    286359 :  arith64      gcc
+       abs :     2.74     2.68
+      ashl :     2.49     2.69
+      ashr :     2.87     2.74
+      clzd :     2.95     1.63
+      clzs :     2.60     1.33
+      ctsz :     3.50     1.42
+      ctzd :     3.57     1.65
+       div :    16.19     8.11
+       ffs :     2.69     1.64
+       mod :    15.49     8.32
+      popd :     6.31     3.59
+      pops :     2.43     2.15
+       shr :     2.39     2.69
+      udiv :    13.04     5.64
+      umod :    11.94     6.25
+
+This shows that the gcc native functions, presumably written in assembly
+language and leveraging CPU-specific arithmetic operators, are generally twice
+as fast as arith64 equivalents.

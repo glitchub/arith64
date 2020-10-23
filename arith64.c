@@ -115,7 +115,13 @@ int __clzsi2(uint32_t a)
 
 int __clzdi2(uint64_t a)
 {
-    return hi(a) ? __clzsi2(hi(a)) : __clzsi2(lo(a)) + 32;
+    int b, n = 0;
+    b = !(a & 0xffffffff00000000ULL) << 5; n += b; a <<= b;
+    b = !(a & 0xffff000000000000ULL) << 4; n += b; a <<= b;
+    b = !(a & 0xff00000000000000ULL) << 3; n += b; a <<= b;
+    b = !(a & 0xf000000000000000ULL) << 2; n += b; a <<= b;
+    b = !(a & 0xc000000000000000ULL) << 1; n += b; a <<= b;
+    return n + !(a & 0x8000000000000000ULL);
 }
 
 // These functions return the number of trailing 0-bits in a, starting at the
@@ -132,7 +138,13 @@ int __ctzsi2(uint32_t a)
 
 int __ctzdi2(uint64_t a)
 {
-    return lo(a) ? __ctzsi2(lo(a)) : __ctzsi2(hi(a)) + 32;
+    int b, n = 0;
+    b = !(a & 0x00000000ffffffffULL) << 5; n += b; a >>= b;
+    b = !(a & 0x000000000000ffffULL) << 4; n += b; a >>= b;
+    b = !(a & 0x00000000000000ffULL) << 3; n += b; a >>= b;
+    b = !(a & 0x000000000000000fULL) << 2; n += b; a >>= b;
+    b = !(a & 0x0000000000000003ULL) << 1; n += b; a >>= b;
+    return n + !(a & 0x0000000000000001ULL);
 }
 
 // Calculate both the quotient and remainder of the unsigned division of a and
@@ -164,9 +176,7 @@ uint64_t __divmoddi4(uint64_t a, uint64_t b, uint64_t *c)
     }
 
     // let's do long division
-    char bits = (b ? __clzdi2(b) : 64) -        // number of bits to iterate
-                (a ? __clzdi2(a) : 64)
-                + 1;
+    char bits = __clzdi2(b) - __clzdi2(a) + 1;  // number of bits to iterate (a and b are non-zero)
     uint64_t rem = a >> bits;                   // init remainder
     a <<= 64 - bits;                            // shift numerator to the high bit
     uint64_t wrap = 0;                          // start with wrap = 0
@@ -230,14 +240,21 @@ int __popcountsi2(uint32_t a)
     a = ((a >> 2) & 0x33333333) + (a & 0x33333333);
     a = (a + (a >> 4)) & 0x0F0F0F0F;
     a = (a + (a >> 16));
-    // add the bytes, return 0 to 32
+    // add the bytes, return bottom 6 bits
     return (a + (a >> 8)) & 63;
 }
 
 // Return the number of bits set in a.
 int __popcountdi2(uint64_t a)
 {
-    return __popcountsi2(hi(a)) + __popcountsi2(lo(a));
+    // collect sums into two low bytes
+    a = a - ((a >> 1) & 0x5555555555555555ULL);
+    a = ((a >> 2) & 0x3333333333333333ULL) + (a & 0x3333333333333333ULL);
+    a = (a + (a >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
+    a = (a + (a >> 32));
+    a = (a + (a >> 16));
+    // add the bytes, return bottom 7 bits
+    return (a + (a >> 8)) & 127;
 }
 
 // Return the quotient of the unsigned division of a and b.

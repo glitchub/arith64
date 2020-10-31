@@ -1,3 +1,4 @@
 test.gcc
 test.arith64
 *.o
+*.su

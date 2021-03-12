@@ -9,6 +9,8 @@
 #include <time.h>
 #include <string.h>
 #include <stdint.h>
+#include <unistd.h>
+#include <sys/times.h>
 
 // Functions defined by arith64.c are also in libgcc
 int64_t __absvdi2(int64_t a);
@@ -30,9 +32,19 @@ uint64_t __umoddi3(uint64_t a, uint64_t b);
 // monotonic nanoseconds, more or less
 uint64_t nS(void)
 {
+#if 0
+    // wall time
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
     return ((uint64_t)t.tv_sec * 1000000000ULL) + (uint64_t)t.tv_nsec;
+#else
+    // user time
+    static int scale = 0;
+    if (!scale) scale = 1000000000/sysconf(_SC_CLK_TCK);
+    struct tms t;
+    times(&t);
+    return (uint64_t)t.tms_utime * scale;
+#endif
 }
 
 #define LOOPS 1000000

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from random import randint; import subprocess, sys, time;
+from random import randrange; import subprocess, sys, time
 verbose=0
 benchmark=0
 try:
@@ -20,23 +20,17 @@ if benchmark:
     arith64bench={}
     next = time.time()+5
 
+# Return a random test value with .01% chance of an edge case
+def rand():
+    l = randrange(660000)
+    if l <= 63: return 2 ** l
+    if l == 64: return 0
+    if l == 65: return (2 ** 64) - 1
+    return randrange(2 ** 64)
+
 while True:
-
-    l = loops % 100000
-    if l == 0:
-        A = 0
-    elif l < 65:
-        A = (1<<64) >> l
-    else:
-        A = randint(0, 2 ** 64 -1)
-
-    l = loops % 100001
-    if l < 64:
-        B = 1 << l
-    elif l == 64:
-        B = 0
-    else:
-        B = randint(0, 2 ** 64 -1)
+    A = rand()
+    B = rand()
 
     # send to each proc
     for p in procs:
@@ -53,9 +47,9 @@ while True:
         for op, uS in [t.split('=') for t in out[0].split()[2:]]: gccbench[op]=gccbench.get(op,0)+float(uS)
         for op, uS in [t.split('=') for t in out[1].split()[2:]]: arith64bench[op]=arith64bench.get(op,0)+float(uS)
         if time.time() >= next:
-            print("%10d : %8s %8s" % (loops, "arith64", "gcc"))
+            print("%10dM : %8s %8s" % (loops, "arith64", "gcc"))
             for op in sorted(gccbench.keys()):
-                print("%10s : %8.2f %8.2f" % (op, arith64bench[op]/loops, gccbench[op]/loops))
+                print("%11s : %8.2f %8.2f" % (op, arith64bench[op]/loops, gccbench[op]/loops))
             print()
             next += 5
     elif verbose or out[0] != out[1]:

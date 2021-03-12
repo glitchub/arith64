@@ -1,31 +1,21 @@
-# The test.c executable is built twice: as test.gcc linked against libgcc in
-# the usual way; and as test.arith64 linked against arith64.c.
+# executables
+BOTH = test.gcc test.arith64
 
-# test.py starts both programs in the background, feeding them the same
-# random 64-bit numbers and making sure they produce the same output.
-
-# Unless there's a mismatch test.py will run forever.
-
-COPTS=-Wall -Werror -m32 -O2
-
+# build executables and run the comparison test
 .PHONY: test
-test: both; ./test.py
+test: ${BOTH}; ./test.py
 
-# as above but just print average times, does not fail
+# build executables and run the benchmark test
 .PHONY: bench
-bench: both; ./test.py -b
+bench: ${BOTH}; ./test.py -b
+
+COPTS = -Wall -Werror -m32 -O3
 
 # build test.gcc in the usual way
 test.gcc: test.c; gcc ${COPTS} -o $@ $<
 
-# build test.arith64 with "-nodefaultlibs -lc" to prevent link to libgcc and use arith64 instead
-test.arith64: test.c arith64.o; gcc ${COPTS} -nodefaultlibs -lc -o $@ $^
-
-# compile arith64 and generate .su file
-arith64.o: arith64.c; gcc ${COPTS} -fconserve-stack -fstack-usage -c -o arith64.o arith64.c
-
-.PHONY: both
-both: test.gcc test.arith64
+# build test.arith64 with arith64 instead of libgcc
+test.arith64: test.c arith64.c; gcc ${COPTS} -nodefaultlibs -lc -o $@ $^
 
 .PHONY: clean
-clean:; rm -f test.gcc test.arith64 *.o *.su
+clean:; rm -f ${BOTH}

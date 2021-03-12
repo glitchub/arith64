@@ -23,18 +23,14 @@ date.
 created, one linked to arith64.c and one to libgcc. test.py launches these into
 the background and then passes identical sets of random numbers to each,
 comparing their outputs. On mismatch it reports error and exits, otherwise it
-will run forever, intermittently printing total number of tests performed (in
-millions).
-
-(Note your system may require 32-bit compatiblity libraries in order for the
-build to succeed. On debian, try "apt install gcc-multilib".)
+will run forever, intermittently printing the total number of tests performed.
 
 'make bench' starts the test executables in benchmark mode, they perform each
 operation one million times and print the average elapsed time in nanoseconds.
 test.py then collates the returned information and prints a running average
 every 5 seconds, e.g.:
 
-    286359 :  arith64      gcc
+   286359M :  arith64      gcc
        abs :     2.74     2.68
       ashl :     2.49     2.69
       ashr :     2.87     2.74

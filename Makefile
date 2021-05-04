@@ -11,6 +11,9 @@ bench: ${BOTH}; ./test.py -b
 
 COPTS = -Wall -Werror -m32 -O3
 
+# uncomment for older gcc e.g. centos 7
+# COPTS += -std=gnu99
+
 # build test.gcc in the usual way
 test.gcc: test.c; gcc ${COPTS} -o $@ $<
 

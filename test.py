@@ -13,7 +13,7 @@ commands = ["gcc -b", "arith64 -b"] if benchmark else ["gcc", "arith64"]
 loops = 0
 procs = []
 for what in commands:
-    procs.append(subprocess.Popen("./test.%s" % what, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, text=True))
+    procs.append(subprocess.Popen("./test.%s" % what, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True))
 
 if benchmark:
     gccbench={}

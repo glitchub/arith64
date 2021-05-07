@@ -23,29 +23,30 @@ date.
 created, one linked to arith64.c and one to libgcc. test.py launches these into
 the background and then passes identical sets of random numbers to each,
 comparing their outputs. On mismatch it reports error and exits, otherwise it
-will run forever, intermittently printing the total number of tests performed.
+will run forever, printing the total number of test performed every 5 seconds.
 
 'make bench' starts the test executables in benchmark mode, they perform each
 operation one million times and print the average elapsed time in nanoseconds.
 test.py then collates the returned information and prints a running average
 every 5 seconds, e.g.:
 
-   286359M :  arith64      gcc
-       abs :     2.74     2.68
-      ashl :     2.49     2.69
-      ashr :     2.87     2.74
-      clzd :     2.95     1.63
-      clzs :     2.60     1.33
-      ctsz :     3.50     1.42
-      ctzd :     3.57     1.65
-       div :    16.19     8.11
-       ffs :     2.69     1.64
-       mod :    15.49     8.32
-      popd :     6.31     3.59
-      pops :     2.43     2.15
-       shr :     2.39     2.69
-      udiv :    13.04     5.64
-      umod :    11.94     6.25
+1,772 cases
+          arith64      gcc
+   abs :   3.85nS   6.15nS
+  ashl :   4.22nS   5.00nS
+  ashr :   4.31nS   4.04nS
+  clzd :   6.51nS   3.62nS
+  clzs :   5.14nS   2.98nS
+  ctsz :   4.63nS   2.66nS
+  ctzd :   6.01nS   2.98nS
+   div :  15.41nS   8.12nS
+   ffs :   6.19nS   2.80nS
+   mod :  17.84nS   8.99nS
+  popd :   8.72nS   5.55nS
+  pops :   3.94nS   4.40nS
+   shr :   4.50nS   4.45nS
+  udiv :  11.47nS   5.64nS
+  umod :  11.56nS   6.74nS
 
 This shows that the gcc native functions, presumably written in assembly
 language and leveraging CPU-specific arithmetic operators, are generally twice

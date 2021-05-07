@@ -17,56 +17,52 @@
 // This software is released as-is into the public domain, as described at
 // https://unlicense.org. Do whatever you like with it.
 
-#ifndef uint64_t
-// mimic stdint.h
-#define arith64_stdint
-#define uint64_t unsigned long long int
-#define int64_t signed long long int
-#define uint32_t unsigned int
-#define int32_t int
-#endif
+#define arith64_u64 unsigned long long int
+#define arith64_s64 signed long long int
+#define arith64_u32 unsigned int
+#define arith64_s32 int
 
 typedef union
 {
-    uint64_t u64;
-    int64_t s64;
+    arith64_u64 u64;
+    arith64_s64 s64;
     struct
     {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        uint32_t hi; uint32_t lo;
+        arith64_u32 hi; arith64_u32 lo;
 #else
-        uint32_t lo; uint32_t hi;
+        arith64_u32 lo; arith64_u32 hi;
 #endif
     } u32;
     struct
     {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        int32_t hi; int32_t lo;
+        arith64_s32 hi; arith64_s32 lo;
 #else
-        int32_t lo; int32_t hi;
+        arith64_s32 lo; arith64_s32 hi;
 #endif
     } s32;
-} _arith64_word;
+} arith64_word;
 
 // extract hi and lo 32-bit words from 64-bit value
-#define hi(n) (_arith64_word){.u64=n}.u32.hi
-#define lo(n) (_arith64_word){.u64=n}.u32.lo
+#define arith64_hi(n) (arith64_word){.u64=n}.u32.hi
+#define arith64_lo(n) (arith64_word){.u64=n}.u32.lo
 
 // Negate a if b is negative, via invert and increment.
-#define negate(a, b) (((a) ^ ((((int64_t)(b)) >= 0) - 1)) + (((int64_t)(b)) < 0))
-#define abs(a) negate(a, a)
+#define arith64_neg(a, b) (((a) ^ ((((arith64_s64)(b)) >= 0) - 1)) + (((arith64_s64)(b)) < 0))
+#define arith64_abs(a) arith64_neg(a, a)
 
 // Return the absolute value of a.
 // Note LLINT_MIN cannot be negated.
-int64_t __absvdi2(int64_t a)
+arith64_s64 __absvdi2(arith64_s64 a)
 {
-    return abs(a);
+    return arith64_abs(a);
 }
 
 // Return the result of shifting a left by b bits.
-int64_t __ashldi3(int64_t a, int b)
+arith64_s64 __ashldi3(arith64_s64 a, int b)
 {
-    _arith64_word w = {.s64 = a};
+    arith64_word w = {.s64 = a};
 
     b &= 63;
 
@@ -83,9 +79,9 @@ int64_t __ashldi3(int64_t a, int b)
 }
 
 // Return the result of arithmetically shifting a right by b bits.
-int64_t __ashrdi3(int64_t a, int b)
+arith64_s64 __ashrdi3(arith64_s64 a, int b)
 {
-    _arith64_word w = {.s64 = a};
+    arith64_word w = {.s64 = a};
 
     b &= 63;
 
@@ -103,7 +99,7 @@ int64_t __ashrdi3(int64_t a, int b)
 
 // These functions return the number of leading 0-bits in a, starting at the
 // most significant bit position. If a is zero, the result is undefined.
-int __clzsi2(uint32_t a)
+int __clzsi2(arith64_u32 a)
 {
     int b, n = 0;
     b = !(a & 0xffff0000) << 4; n += b; a <<= b;
@@ -113,7 +109,7 @@ int __clzsi2(uint32_t a)
     return n + !(a & 0x80000000);
 }
 
-int __clzdi2(uint64_t a)
+int __clzdi2(arith64_u64 a)
 {
     int b, n = 0;
     b = !(a & 0xffffffff00000000ULL) << 5; n += b; a <<= b;
@@ -126,7 +122,7 @@ int __clzdi2(uint64_t a)
 
 // These functions return the number of trailing 0-bits in a, starting at the
 // least significant bit position. If a is zero, the result is undefined.
-int __ctzsi2(uint32_t a)
+int __ctzsi2(arith64_u32 a)
 {
     int b, n = 0;
     b = !(a & 0x0000ffff) << 4; n += b; a >>= b;
@@ -136,7 +132,7 @@ int __ctzsi2(uint32_t a)
     return n + !(a & 0x00000001);
 }
 
-int __ctzdi2(uint64_t a)
+int __ctzdi2(arith64_u64 a)
 {
     int b, n = 0;
     b = !(a & 0x00000000ffffffffULL) << 5; n += b; a >>= b;
@@ -150,14 +146,14 @@ int __ctzdi2(uint64_t a)
 // Calculate both the quotient and remainder of the unsigned division of a and
 // b. The return value is the quotient, and the remainder is placed in variable
 // pointed to by c (if it's not NULL).
-uint64_t __divmoddi4(uint64_t a, uint64_t b, uint64_t *c)
+arith64_u64 __divmoddi4(arith64_u64 a, arith64_u64 b, arith64_u64 *c)
 {
     if (b > a)                                  // divisor > numerator?
     {
         if (c) *c = a;                          // remainder = numerator
         return 0;                               // quotient = 0
     }
-    if (!hi(b))                                 // divisor is 32-bit
+    if (!arith64_hi(b))                         // divisor is 32-bit
     {
         if (b == 0)                             // divide by 0
         {
@@ -168,23 +164,24 @@ uint64_t __divmoddi4(uint64_t a, uint64_t b, uint64_t *c)
             if (c) *c = 0;                      // remainder = 0
             return a;                           // quotient = numerator
         }
-        if (!hi(a))                             // numerator is also 32-bit
+        if (!arith64_hi(a))                     // numerator is also 32-bit
         {
-            if (c) *c = lo(a) % lo(b);          // use generic 32-bit operators
-            return lo(a) / lo(b);
+            if (c)                              // use generic 32-bit operators
+                *c = arith64_lo(a) % arith64_lo(b);
+            return arith64_lo(a) / arith64_lo(b);
         }
     }
 
     // let's do long division
     char bits = __clzdi2(b) - __clzdi2(a) + 1;  // number of bits to iterate (a and b are non-zero)
-    uint64_t rem = a >> bits;                   // init remainder
+    arith64_u64 rem = a >> bits;                   // init remainder
     a <<= 64 - bits;                            // shift numerator to the high bit
-    uint64_t wrap = 0;                          // start with wrap = 0
+    arith64_u64 wrap = 0;                          // start with wrap = 0
     while (bits-- > 0)                          // for each bit
     {
         rem = (rem << 1) | (a >> 63);           // shift numerator MSB to remainder LSB
         a = (a << 1) | (wrap & 1);              // shift out the numerator, shift in wrap
-        wrap = ((int64_t)(b - rem - 1) >> 63);  // wrap = (b > rem) ? 0 : 0xffffffffffffffff (via sign extension)
+        wrap = ((arith64_s64)(b - rem - 1) >> 63);  // wrap = (b > rem) ? 0 : 0xffffffffffffffff (via sign extension)
         rem -= b & wrap;                        // if (wrap) rem -= b
     }
     if (c) *c = rem;                            // maybe set remainder
@@ -192,23 +189,23 @@ uint64_t __divmoddi4(uint64_t a, uint64_t b, uint64_t *c)
 }
 
 // Return the quotient of the signed division of a and b.
-int64_t __divdi3(int64_t a, int64_t b)
+arith64_s64 __divdi3(arith64_s64 a, arith64_s64 b)
 {
-    uint64_t q = __divmoddi4(abs(a), abs(b), (void *)0);
-    return negate(q, a^b); // negate q if a and b signs are different
+    arith64_u64 q = __divmoddi4(arith64_abs(a), arith64_abs(b), (void *)0);
+    return arith64_neg(q, a^b); // negate q if a and b signs are different
 }
 
 // Return the index of the least significant 1-bit in a, or the value zero if a
 // is zero. The least significant bit is index one.
-int __ffsdi2(uint64_t a)
+int __ffsdi2(arith64_u64 a)
 {
     return a ? __ctzdi2(a) + 1 : 0;
 }
 
 // Return the result of logically shifting a right by b bits.
-uint64_t __lshrdi3(uint64_t a, int b)
+arith64_u64 __lshrdi3(arith64_u64 a, int b)
 {
-    _arith64_word w = {.u64 = a};
+    arith64_word w = {.u64 = a};
 
     b &= 63;
 
@@ -225,15 +222,15 @@ uint64_t __lshrdi3(uint64_t a, int b)
 }
 
 // Return the remainder of the signed division of a and b.
-int64_t __moddi3(int64_t a, int64_t b)
+arith64_s64 __moddi3(arith64_s64 a, arith64_s64 b)
 {
-    uint64_t r;
-    __divmoddi4(abs(a), abs(b), &r);
-    return negate(r, a); // negate remainder if numerator is negative
+    arith64_u64 r;
+    __divmoddi4(arith64_abs(a), arith64_abs(b), &r);
+    return arith64_neg(r, a); // negate remainder if numerator is negative
 }
 
 // Return the number of bits set in a.
-int __popcountsi2(uint32_t a)
+int __popcountsi2(arith64_u32 a)
 {
     // collect sums into two low bytes
     a = a - ((a >> 1) & 0x55555555);
@@ -245,7 +242,7 @@ int __popcountsi2(uint32_t a)
 }
 
 // Return the number of bits set in a.
-int __popcountdi2(uint64_t a)
+int __popcountdi2(arith64_u64 a)
 {
     // collect sums into two low bytes
     a = a - ((a >> 1) & 0x5555555555555555ULL);
@@ -258,28 +255,15 @@ int __popcountdi2(uint64_t a)
 }
 
 // Return the quotient of the unsigned division of a and b.
-uint64_t __udivdi3(uint64_t a, uint64_t b)
+arith64_u64 __udivdi3(arith64_u64 a, arith64_u64 b)
 {
     return __divmoddi4(a, b, (void *)0);
 }
 
 // Return the remainder of the unsigned division of a and b.
-uint64_t __umoddi3(uint64_t a, uint64_t b)
+arith64_u64 __umoddi3(arith64_u64 a, arith64_u64 b)
 {
-    uint64_t r;
+    arith64_u64 r;
     __divmoddi4(a, b, &r);
     return r;
 }
-
-// Remove macros in case we're #include'd
-#undef hi
-#undef lo
-#undef negate
-#undef abs
-#ifdef arith64_stdint
-  #undef uint64_t
-  #undef int64_t
-  #undef uint32_t
-  #undef int32_t
-  #undef arith64_stdint
-#endif

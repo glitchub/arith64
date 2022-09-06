@@ -51,3 +51,7 @@ every 5 seconds, e.g.:
 This shows that the gcc native functions, presumably written in assembly
 language and leveraging CPU-specific arithmetic operators, are generally twice
 as fast as arith64 equivalents.
+
+NOTE: the test code is built in 32-bit mode. If your development system is
+64-bit you'll need to install 32-bit compatible headers and libraries. On
+debian this can be done with "sudo apt install gcc-multilib".

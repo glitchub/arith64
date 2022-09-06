@@ -9,8 +9,7 @@ test: ${BOTH}; ./test.py
 .PHONY: bench
 bench: ${BOTH}; ./test.py -b
 
-COPTS = -Wall -Werror -m32 -O3
-
+COPTS = -Wall -Werror -m32 -O3 -fno-stack-protector
 # uncomment for older gcc e.g. centos 7
 # COPTS += -std=gnu99
 

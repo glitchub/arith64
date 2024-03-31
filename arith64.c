@@ -143,7 +143,7 @@ int __ctzdi2(arith64_u64 a)
     return n + !(a & 0x0000000000000001ULL);
 }
 
-// Calculate both the quotient and remainder of the unsigned division of a and
+// Calculate both the quotient and remainder of the unsigned division of a by
 // b. The return value is the quotient, and the remainder is placed in variable
 // pointed to by c (if it's not NULL).
 arith64_u64 __divmoddi4(arith64_u64 a, arith64_u64 b, arith64_u64 *c)
@@ -174,9 +174,9 @@ arith64_u64 __divmoddi4(arith64_u64 a, arith64_u64 b, arith64_u64 *c)
 
     // let's do long division
     char bits = __clzdi2(b) - __clzdi2(a) + 1;  // number of bits to iterate (a and b are non-zero)
-    arith64_u64 rem = a >> bits;                   // init remainder
+    arith64_u64 rem = a >> bits;                // init remainder
     a <<= 64 - bits;                            // shift numerator to the high bit
-    arith64_u64 wrap = 0;                          // start with wrap = 0
+    arith64_u64 wrap = 0;                       // start with wrap = 0
     while (bits-- > 0)                          // for each bit
     {
         rem = (rem << 1) | (a >> 63);           // shift numerator MSB to remainder LSB
@@ -188,7 +188,7 @@ arith64_u64 __divmoddi4(arith64_u64 a, arith64_u64 b, arith64_u64 *c)
     return (a << 1) | (wrap & 1);               // return the quotient
 }
 
-// Return the quotient of the signed division of a and b.
+// Return the quotient of the signed division of a by b.
 arith64_s64 __divdi3(arith64_s64 a, arith64_s64 b)
 {
     arith64_u64 q = __divmoddi4(arith64_abs(a), arith64_abs(b), (void *)0);
@@ -221,7 +221,7 @@ arith64_u64 __lshrdi3(arith64_u64 a, int b)
     return w.u64;
 }
 
-// Return the remainder of the signed division of a and b.
+// Return the remainder of the signed division of a by b.
 arith64_s64 __moddi3(arith64_s64 a, arith64_s64 b)
 {
     arith64_u64 r;
@@ -254,13 +254,13 @@ int __popcountdi2(arith64_u64 a)
     return (a + (a >> 8)) & 127;
 }
 
-// Return the quotient of the unsigned division of a and b.
+// Return the quotient of the unsigned division of a by b.
 arith64_u64 __udivdi3(arith64_u64 a, arith64_u64 b)
 {
     return __divmoddi4(a, b, (void *)0);
 }
 
-// Return the remainder of the unsigned division of a and b.
+// Return the remainder of the unsigned division of a by b.
 arith64_u64 __umoddi3(arith64_u64 a, arith64_u64 b)
 {
     arith64_u64 r;
